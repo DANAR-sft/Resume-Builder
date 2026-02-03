@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { coerce, z } from "zod";
 
 const trimmed = (max: number) =>
   z.string().trim().min(1, "Required").max(max, `Max ${max} chars`);
@@ -83,19 +83,20 @@ export const experienceItemSchema = z.object({
   id: z.string().optional(),
   company: trimmed(80),
   role: trimmed(80),
-  start: z.string().trim().min(4, "Invalid start date"),
-  end: z.string().trim().optional(),
+  employment_type:z.string(),
+  start: z.coerce.date().transform((val) => val.toISOString().split('T')[0]),
+  end: z.coerce.date().optional().or(z.literal("")),
   location: optionalTrimmed(80),
   highlights: z.array(z.string().trim().min(1)).max(12).optional()
 });
 
 export const educationItemSchema = z.object({
   id: z.string().optional(),
-  school: trimmed(120),
+  college: trimmed(120),
   degree: optionalTrimmed(80),
   field: optionalTrimmed(80),
-  start: z.string().trim().optional(),
-  end: z.string().trim().optional(),
+  start: z.coerce.date().transform((val) => val.toISOString().split('T')[0]),
+  end: z.coerce.date().optional().or(z.literal("")),
   gpa: optionalTrimmed(20)
 });
 
@@ -111,7 +112,7 @@ export const extrasSchema = z
         z.object({
           name: trimmed(120),
           issuer: optionalTrimmed(80),
-          date: optionalTrimmed(20),
+          date: z.coerce.date().transform((val) => val.toISOString().split('T')[0]),
           url: urlSchema.optional()
         })
       )
