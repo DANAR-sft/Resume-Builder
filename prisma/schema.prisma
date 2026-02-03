@@ -17,7 +17,7 @@ model Resume {
   userId      String   @unique @map("user_id") @db.Uuid
 
   title       String   @default("My Resume") @map("title")
-  templateId  String   @default("modern-1")  @map("template_id")
+  templateId  String   @default("ats-1")  @map("template_id")
 
   data        Json     @default("{}") @map("data")
   createdAt   DateTime @default(now()) @map("created_at")
