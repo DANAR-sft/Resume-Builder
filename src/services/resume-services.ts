@@ -11,7 +11,15 @@ export type ResumeRow = {
 };
 
 const DEFAULT_DATA = {
-  profile: { fullName: "" },
+  profile: {
+    fullName: "",
+    headline: "",
+    avatarUrl: "",
+    email: "",
+    location: "",
+    summary: "",
+    links: []
+  },
   experience: [],
   education: [],
   skills: [],
