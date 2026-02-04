@@ -1,8 +1,10 @@
 import { coerce, z } from "zod";
 
+// trimmed function custom
 const trimmed = (max: number) =>
   z.string().trim().min(1, "Required").max(max, `Max ${max} chars`);
 
+// optional trimmed custom
 const optionalTrimmed = (max: number) =>
   z.string().trim().max(max, `Max ${max} chars`).optional();
 

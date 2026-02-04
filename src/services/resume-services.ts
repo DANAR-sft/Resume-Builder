@@ -27,7 +27,7 @@ const DEFAULT_DATA = {
   extras: {}
 };
 
-// arrays replaced, objects shallow-merged per top-level section
+// arrays replaced
 function mergeData(current: any, patch: any) {
   // Jika database memberikan null, gunakan DEFAULT_DATA
   const base = (current && typeof current === "object") ? current : DEFAULT_DATA;
@@ -108,7 +108,7 @@ export class ResumeService {
     const sb = supabaseRls(accessToken);
     const existing = await this.getByUserId(accessToken, userId);
 
-    const id = existing?.id ?? randomUUID(); // ✅ also needed here
+    const id = existing?.id ?? randomUUID();
     const nextData = mergeData(existing?.data, patch);
 
     const payload: ResumeRow | any = {
