@@ -14,8 +14,8 @@ const svc = new ResumeService();
 export class ResumeController {
   // DAY 1
   get = async (req: Request, res: Response) => {
-    const row = await svc.get(req.accessToken!);
-    res.json(row);
+  const row = await svc.get(req.accessToken!, req.userId!);
+  res.json(row);
   };
 
   // DAY 1 (optional)

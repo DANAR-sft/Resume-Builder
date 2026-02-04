@@ -52,6 +52,11 @@ function mergeData(current: any, patch: any) {
 
 export class ResumeService {
   [x: string]: any;
+
+  async get(accessToken: string, userId: string): Promise<ResumeRow | null> {
+    return this.getByUserId(accessToken, userId);
+  }
+
   async getByUserId(accessToken: string, userId: string): Promise<ResumeRow | null> {
     const sb = supabaseRls(accessToken);
 
@@ -65,7 +70,7 @@ export class ResumeService {
     return (data as ResumeRow) ?? null;
   }
 
-  async patchMeta(
+ async patchMeta(
     accessToken: string,
     userId: string,
     meta: { title?: string; templateId?: string }
@@ -75,21 +80,14 @@ export class ResumeService {
 
     const id = existing?.id ?? randomUUID();
 
-    const nextData = mergeData(existing?.data, this.patchMeta);
-
-      // Tambahkan pengecekan keamanan
-      if (!nextData) {
-        throw new Error("Gagal menggabungkan data resume");
-      }
-
-      const payload: any = {
-        id,
-        user_id: userId,
-        title: existing?.title ?? "My Resume",
-        template_id: existing?.template_id ?? "modern-1",
-        data: nextData, // Pastikan ini bukan undefined
-        updated_at: new Date().toISOString() // Pastikan kolom ini terisi jika belum buat trigger DB
-      };
+    const payload = {
+      id,
+      user_id: userId,
+      title: meta.title ?? existing?.title ?? "My Resume",
+      template_id: meta.templateId ?? existing?.template_id ?? "modern-1",
+      data: existing?.data ?? DEFAULT_DATA,
+      updated_at: new Date().toISOString(),
+    };
 
     const { data, error } = await sb
       .from("resumes")
@@ -100,6 +98,7 @@ export class ResumeService {
     if (error) throw new Error(error.message);
     return data as ResumeRow;
   }
+
 
   async patchSection(
     accessToken: string,
