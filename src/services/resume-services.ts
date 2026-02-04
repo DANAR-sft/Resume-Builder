@@ -1,5 +1,4 @@
 import { supabaseRls } from "../supabase/clients";
-import { randomUUID } from "crypto";
 
 export type ResumeRow = {
   id: string;
@@ -27,71 +26,55 @@ const DEFAULT_DATA = {
   extras: {}
 };
 
-// arrays replaced
+// arrays replaced, objects shallow-merged
 function mergeData(current: any, patch: any) {
-  // Jika database memberikan null, gunakan DEFAULT_DATA
-  const base = (current && typeof current === "object") ? current : DEFAULT_DATA;
-  const p = (patch && typeof patch === "object") ? patch : {};
-
-  const next: any = { ...base, ...p };
-
-  for (const key of Object.keys(p)) {
-    const pv = p[key];
-    const bv = base[key];
-
-    const isObj = (v: any) => v && typeof v === "object" && !Array.isArray(v);
-
-    if (isObj(pv) && isObj(bv)) {
-      next[key] = { ...bv, ...pv };
-    } else {
-      next[key] = pv;
-    }
-  }
-  return next;
+  const base = current && typeof current === "object" ? current : {};
+  return { ...DEFAULT_DATA, ...base, ...patch };
 }
 
 export class ResumeService {
-  [x: string]: any;
-
-  async get(accessToken: string, userId: string): Promise<ResumeRow | null> {
-    return this.getByUserId(accessToken, userId);
-  }
-
-  async getByUserId(accessToken: string, userId: string): Promise<ResumeRow | null> {
+  // Ambil "resume aktif" = resume terbaru (biar endpoint lama tetap bisa dipakai)
+  async get(accessToken: string): Promise<ResumeRow | null> {
     const sb = supabaseRls(accessToken);
 
     const { data, error } = await sb
       .from("resumes")
       .select("*")
-      .eq("user_id", userId)
+      .order("updated_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (error) throw new Error(error.message);
     return (data as ResumeRow) ?? null;
   }
 
- async patchMeta(
-    accessToken: string,
-    userId: string,
-    meta: { title?: string; templateId?: string }
-  ): Promise<ResumeRow> {
+  // BARU: list semua resume milik user (buat UI choose resume nantinya)
+  async list(accessToken: string): Promise<ResumeRow[]> {
     const sb = supabaseRls(accessToken);
-    const existing = await this.getByUserId(accessToken, userId);
 
-    const id = existing?.id ?? randomUUID();
+    const { data, error } = await sb
+      .from("resumes")
+      .select("*")
+      .order("updated_at", { ascending: false });
 
-    const payload = {
-      id,
+    if (error) throw new Error(error.message);
+    return (data as ResumeRow[]) ?? [];
+  }
+
+  // BARU: create resume baru untuk user yang sama
+  async create(accessToken: string, userId: string, meta?: { title?: string; templateId?: string }) {
+    const sb = supabaseRls(accessToken);
+
+    const payload: any = {
       user_id: userId,
-      title: meta.title ?? existing?.title ?? "My Resume",
-      template_id: meta.templateId ?? existing?.template_id ?? "modern-1",
-      data: existing?.data ?? DEFAULT_DATA,
-      updated_at: new Date().toISOString(),
+      title: meta?.title ?? "My Resume",
+      template_id: meta?.templateId ?? "ats-1",
+      data: DEFAULT_DATA
     };
 
     const { data, error } = await sb
       .from("resumes")
-      .upsert(payload, { onConflict: "user_id" })
+      .insert(payload)
       .select("*")
       .single();
 
@@ -99,29 +82,65 @@ export class ResumeService {
     return data as ResumeRow;
   }
 
-
-  async patchSection(
-    accessToken: string,
-    userId: string,
-    patch: any
-  ): Promise<ResumeRow> {
+  // NAMA SAMA, tapi logic diubah:
+  // - kalau ada resume aktif => UPDATE by id
+  // - kalau belum ada => INSERT pertama
+  async patchMeta(accessToken: string, userId: string, meta: { title?: string; templateId?: string }) {
     const sb = supabaseRls(accessToken);
-    const existing = await this.getByUserId(accessToken, userId);
+    const existing = await this.get(accessToken);
 
-    const id = existing?.id ?? randomUUID();
-    const nextData = mergeData(existing?.data, patch);
+    if (!existing) {
+      // belum ada resume sama sekali => buat baru
+      return this.create(accessToken, userId, meta);
+    }
 
-    const payload: ResumeRow | any = {
-      id,
-      user_id: userId,
-      title: existing?.title ?? "My Resume",
-      template_id: existing?.template_id ?? "modern-1",
-      data: nextData
+    const patch: any = {
+      title: meta.title ?? existing.title,
+      template_id: meta.templateId ?? existing.template_id
     };
 
     const { data, error } = await sb
       .from("resumes")
-      .upsert(payload, { onConflict: "user_id" })
+      .update(patch)
+      .eq("id", existing.id)
+      .select("*")
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data as ResumeRow;
+  }
+
+  // NAMA SAMA, tapi logic diubah:
+  // - update resume aktif (terbaru)
+  async patchSection(accessToken: string, userId: string, patch: any) {
+    const sb = supabaseRls(accessToken);
+    const existing = await this.get(accessToken);
+
+    if (!existing) {
+      // belum ada resume => buat baru + set data hasil patch
+      const payload: any = {
+        user_id: userId,
+        title: "My Resume",
+        template_id: "ats-1",
+        data: mergeData(DEFAULT_DATA, patch)
+      };
+
+      const { data, error } = await sb
+        .from("resumes")
+        .insert(payload)
+        .select("*")
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data as ResumeRow;
+    }
+
+    const nextData = mergeData(existing.data, patch);
+
+    const { data, error } = await sb
+      .from("resumes")
+      .update({ data: nextData })
+      .eq("id", existing.id)
       .select("*")
       .single();
 

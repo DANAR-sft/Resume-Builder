@@ -1,28 +1,24 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["public", "auth"]
 }
 
 model Resume {
-  id          String   @id @default(uuid())
-  userId      String   @unique @map("user_id") @db.Uuid
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
 
-  title       String   @default("My Resume") @map("title")
-  templateId  String   @default("ats-1")  @map("template_id")
+  title      String   @default("My Resume") @map("title")
+  templateId String   @default("ats-1")     @map("template_id")
 
-  data        Json     @default("{}") @map("data")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  data       Json     @default("{}") @map("data")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt      @map("updated_at")
 
+  @@index([userId])
   @@map("resumes")
+  @@schema("public")
 }
-

@@ -2,10 +2,11 @@ import express from "express"
 import { auth } from "../middleware/auth";
 import { ResumeController } from "../controllers/resume-controller";
 
-
 const c = new ResumeController();
-
 export const router = express.Router();
+
+router.get("/resumes", auth, c.list);
+router.post("/resumes", auth, c.create);
 
 router.get("/resume", auth, c.get);
 router.patch("/resume/meta", auth, c.patchMeta);
