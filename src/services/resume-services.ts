@@ -18,12 +18,12 @@ const DEFAULT_DATA = {
     email: "",
     location: "",
     summary: "",
-    links: []
+    links: [],
   },
   experience: [],
   education: [],
   skills: [],
-  extras: {}
+  extras: {},
 };
 
 // arrays replaced, objects shallow-merged
@@ -33,22 +33,8 @@ function mergeData(current: any, patch: any) {
 }
 
 export class ResumeService {
-  // Ambil "resume aktif" = resume terbaru (biar endpoint lama tetap bisa dipakai)
-  async get(accessToken: string): Promise<ResumeRow | null> {
-    const sb = supabaseRls(accessToken);
 
-    const { data, error } = await sb
-      .from("resumes")
-      .select("*")
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) throw new Error(error.message);
-    return (data as ResumeRow) ?? null;
-  }
-
-  // BARU: list semua resume milik user (buat UI choose resume nantinya)
+  // List semua resume milik user
   async list(accessToken: string): Promise<ResumeRow[]> {
     const sb = supabaseRls(accessToken);
 
@@ -61,15 +47,19 @@ export class ResumeService {
     return (data as ResumeRow[]) ?? [];
   }
 
-  // BARU: create resume baru untuk user yang sama
-  async create(accessToken: string, userId: string, meta?: { title?: string; templateId?: string }) {
+  // Create resume baru
+  async create(
+    accessToken: string,
+    userId: string,
+    meta?: { title?: string; templateId?: string }
+  ): Promise<ResumeRow> {
     const sb = supabaseRls(accessToken);
 
     const payload: any = {
       user_id: userId,
       title: meta?.title ?? "My Resume",
       template_id: meta?.templateId ?? "ats-1",
-      data: DEFAULT_DATA
+      data: DEFAULT_DATA,
     };
 
     const { data, error } = await sb
@@ -82,27 +72,45 @@ export class ResumeService {
     return data as ResumeRow;
   }
 
-  // NAMA SAMA, tapi logic diubah:
-  // - kalau ada resume aktif => UPDATE by id
-  // - kalau belum ada => INSERT pertama
-  async patchMeta(accessToken: string, userId: string, meta: { title?: string; templateId?: string }) {
+  // =========================
+  // BY ID (untuk multi resume)
+  // =========================
+
+  async getById(
+    accessToken: string,
+    userId: string,
+    resumeId: string
+  ): Promise<ResumeRow | null> {
     const sb = supabaseRls(accessToken);
-    const existing = await this.get(accessToken);
 
-    if (!existing) {
-      // belum ada resume sama sekali => buat baru
-      return this.create(accessToken, userId, meta);
-    }
+    const { data, error } = await sb
+      .from("resumes")
+      .select("*")
+      .eq("id", resumeId)
+      .eq("user_id", userId)
+      .maybeSingle();
 
-    const patch: any = {
-      title: meta.title ?? existing.title,
-      template_id: meta.templateId ?? existing.template_id
-    };
+    if (error) throw new Error(error.message);
+    return (data as ResumeRow) ?? null;
+  }
+
+  async patchMetaById(
+    accessToken: string,
+    userId: string,
+    resumeId: string,
+    meta: { title?: string; templateId?: string }
+  ): Promise<ResumeRow> {
+    const sb = supabaseRls(accessToken);
+
+    const patch: any = {};
+    if (meta.title !== undefined) patch.title = meta.title;
+    if (meta.templateId !== undefined) patch.template_id = meta.templateId;
 
     const { data, error } = await sb
       .from("resumes")
       .update(patch)
-      .eq("id", existing.id)
+      .eq("id", resumeId)
+      .eq("user_id", userId)
       .select("*")
       .single();
 
@@ -110,41 +118,73 @@ export class ResumeService {
     return data as ResumeRow;
   }
 
-  // NAMA SAMA, tapi logic diubah:
-  // - update resume aktif (terbaru)
-  async patchSection(accessToken: string, userId: string, patch: any) {
+  async patchSectionById(
+    accessToken: string,
+    userId: string,
+    resumeId: string,
+    patch: any
+  ): Promise<ResumeRow> {
     const sb = supabaseRls(accessToken);
-    const existing = await this.get(accessToken);
 
-    if (!existing) {
-      // belum ada resume => buat baru + set data hasil patch
-      const payload: any = {
-        user_id: userId,
-        title: "My Resume",
-        template_id: "ats-1",
-        data: mergeData(DEFAULT_DATA, patch)
-      };
-
-      const { data, error } = await sb
-        .from("resumes")
-        .insert(payload)
-        .select("*")
-        .single();
-
-      if (error) throw new Error(error.message);
-      return data as ResumeRow;
-    }
+    const existing = await this.getById(accessToken, userId, resumeId);
+    if (!existing) throw new Error("Resume not found");
 
     const nextData = mergeData(existing.data, patch);
 
     const { data, error } = await sb
       .from("resumes")
       .update({ data: nextData })
-      .eq("id", existing.id)
+      .eq("id", resumeId)
+      .eq("user_id", userId)
       .select("*")
       .single();
 
     if (error) throw new Error(error.message);
     return data as ResumeRow;
+  }
+
+  async deleteById(
+    accessToken: string,
+    userId: string,
+    resumeId: string
+  ): Promise<void> {
+    const sb = supabaseRls(accessToken);
+
+    const { error } = await sb
+      .from("resumes")
+      .delete()
+      .eq("id", resumeId)
+      .eq("user_id", userId); // defense in depth
+
+    if (error) throw new Error(error.message);
+  }
+
+
+  // OPTIONAL: duplicate
+  async duplicateById(
+    accessToken: string,
+    userId: string,
+    resumeId: string
+  ): Promise<ResumeRow> {
+    const existing = await this.getById(accessToken, userId, resumeId);
+    if (!existing) throw new Error("Resume not found");
+
+    return this.create(accessToken, userId, {
+      title: `Copy of ${existing.title ?? "My Resume"}`,
+      templateId: existing.template_id,
+    }).then(async (created) => {
+      // copy data
+      const sb = supabaseRls(accessToken);
+      const { data, error } = await sb
+        .from("resumes")
+        .update({ data: existing.data })
+        .eq("id", created.id)
+        .eq("user_id", userId)
+        .select("*")
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data as ResumeRow;
+    });
   }
 }

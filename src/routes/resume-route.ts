@@ -1,4 +1,4 @@
-import express from "express"
+import express from "express";
 import { auth } from "../middleware/auth";
 import { ResumeController } from "../controllers/resume-controller";
 
@@ -8,11 +8,14 @@ export const router = express.Router();
 router.get("/resumes", auth, c.list);
 router.post("/resumes", auth, c.create);
 
-router.get("/resume", auth, c.get);
-router.patch("/resume/meta", auth, c.patchMeta);
+router.get("/resumes/:id", auth, c.getById);
+router.patch("/resumes/:id/meta", auth, c.patchMetaById);
 
-router.patch("/resume/sections/profile", auth, c.patchProfile);
-router.patch("/resume/sections/experience", auth, c.patchExperience);
-router.patch("/resume/sections/education", auth, c.patchEducation);
-router.patch("/resume/sections/skills", auth, c.patchSkills);
-router.patch("/resume/sections/extras", auth, c.patchExtras);
+router.patch("/resumes/:id/sections/profile", auth, c.patchProfileById);
+router.patch("/resumes/:id/sections/experience", auth, c.patchExperienceById);
+router.patch("/resumes/:id/sections/education", auth, c.patchEducationById);
+router.patch("/resumes/:id/sections/skills", auth, c.patchSkillsById);
+router.patch("/resumes/:id/sections/extras", auth, c.patchExtrasById);
+router.delete("/resumes/:id", auth, c.deleteById);
+
+router.post("/resumes/:id/duplicate", auth, c.duplicateById);
