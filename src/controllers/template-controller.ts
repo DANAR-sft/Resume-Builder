@@ -5,6 +5,10 @@ const svc = new TemplateService();
 
 export class TemplateController {
     list = async (_req: Request, res: Response) => {
-        res.json(svc.list());
+        // Mengembalikan daftar ID saja, karena styling (font/warna) 
+        // sudah diurus sendiri oleh FE dan disimpan ke kolom JSON data.
+        res.json({
+            availableTemplates: svc.listIds()
+        });
     };
 }

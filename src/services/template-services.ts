@@ -1,43 +1,16 @@
-export type TemplateId = "ats-1" | "ats-2";
-
-export type TemplateMeta = {
-    id: TemplateId;
-    name: string;
-    description?: string;
-    supportedFonts: string[];
-    supportedColors?: string[];
-    previewUrl?: string;
-    fontSize?: string;
-    pagePadding?: string;
-};
-
-export const TEMPLATES: TemplateMeta[] = [
-    {
-        id: "ats-1",
-        name: "ATS Clean",
-        description: "Simple, ATS-friendly layout",
-        supportedFonts: ["Inter", "Roboto", "Arial"],
-        supportedColors: ["#111827", "#1D4ED8", "#0F766E", "#B91C1C"],
-        fontSize : "11px",
-        pagePadding: "10mm",
-    },
-    {
-        id: "ats-2",
-        name: "ATS Modern",
-        description: "ATS Modern layout with subtle styling",
-        supportedFonts: ["Inter", "Poppins", "Roboto"],
-        supportedColors: ["#111827", "#6D28D9", "#0EA5E9", "#16A34A"],
-        fontSize : "11px",
-        pagePadding: "10mm",
-    },
-];
+// Hapus TEMPLATES dan TemplateMeta yang lama
+export type TemplateId = string; // Jadi bebas, tidak hanya "ats-1" | "ats-2"
 
 export class TemplateService {
-    list(): TemplateMeta[] {
-        return TEMPLATES;
+    // Karena tidak ada daftar tetap, kita bisa menganggap ID apa saja valid 
+    // selama tidak kosong, atau kamu bisa mengecek ke tabel khusus di Supabase jika ada.
+    exists(templateId: string): boolean {
+        return templateId.length > 0; 
     }
 
-    exists(templateId: string): templateId is TemplateId {
-        return TEMPLATES.some((t) => t.id === templateId);
+    // Jika FE tetap butuh daftar ID template untuk ditampilkan di UI, 
+    // kamu bisa mengembalikan array string sederhana saja.
+    listIds(): string[] {
+        return ["ats-1", "minimalist-1", "executive-1","modern tech-1"];
     }
 }
