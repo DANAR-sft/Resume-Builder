@@ -19,9 +19,14 @@ export const themeSchema = z.object({
     .string()
     .trim()
     .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Invalid hex color"),
-  fontFamily: trimmed(50),
-  fontSize: trimmed(20),
-  pagePadding: trimmed(20),
+  fontFamily: z.string().trim().min(1),
+  fontSize: z.string().trim().default("11px"),
+  pagePadding: z.string().trim().default("10mm"),
+}).refine((data) => {
+  // Opsi tambahan: Kamu bisa memvalidasi apakah font/warna tersebut 
+  // benar-benar didukung oleh templateId yang dipilih user.
+  // Tapi untuk tahap awal, validator string biasa sudah cukup.
+  return true;
 });
 
 // ===== Section order (ADD) =====
