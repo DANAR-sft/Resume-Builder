@@ -18,4 +18,8 @@ router.patch("/resumes/:id/sections/skills", auth, c.patchSkillsById);
 router.patch("/resumes/:id/sections/extras", auth, c.patchExtrasById);
 router.delete("/resumes/:id", auth, c.deleteById);
 
+router.patch("/resumes/:id/theme", auth, c.patchThemeById);
+router.patch("/resumes/:id/section-order", auth, c.patchSectionOrderById);
+
+
 router.post("/resumes/:id/duplicate", auth, c.duplicateById);

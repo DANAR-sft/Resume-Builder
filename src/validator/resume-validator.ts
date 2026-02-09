@@ -1,4 +1,4 @@
-import { coerce, z } from "zod";
+import { z } from "zod";
 
 // trimmed function custom
 const trimmed = (max: number) =>
@@ -10,6 +10,36 @@ const optionalTrimmed = (max: number) =>
 
 const urlSchema = z.string().trim().url("Invalid URL");
 
+// ===== Templates (ADD) =====
+export const TemplateIdSchema = z.enum(["ats-1", "ats-2", "minimalist-1", "executive-1","modern tech-1"]);
+
+// ===== Theme (ADD) =====
+export const themeSchema = z.object({
+  primaryColor: z
+    .string()
+    .trim()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Invalid hex color"),
+  fontFamily: z.string().trim().min(1),
+  fontSize: z.string().trim().default("11px"),
+  pagePadding: z.string().trim().default("10mm"),
+}).refine((data) => {
+  // Opsi tambahan: Kamu bisa memvalidasi apakah font/warna tersebut 
+  // benar-benar didukung oleh templateId yang dipilih user.
+  // Tapi untuk tahap awal, validator string biasa sudah cukup.
+  return true;
+});
+
+// ===== Section order (ADD) =====
+export const sectionKeySchema = z.enum([
+  "profile",
+  "experience",
+  "education",
+  "skills",
+  "extras",
+]);
+export const sectionOrderSchema = z.array(sectionKeySchema).min(1);
+
+// ===== Existing schemas =====
 export const linkTypeSchema = z.enum([
   "linkedin",
   "github",
@@ -23,13 +53,13 @@ export const linkTypeSchema = z.enum([
   "twitter",
   "instagram",
   "youtube",
-  "other"
+  "other",
 ]);
 
 export const profileLinkSchema = z.object({
   type: linkTypeSchema.default("other"),
   label: optionalTrimmed(30),
-  url: urlSchema
+  url: urlSchema,
 });
 
 /**
@@ -48,7 +78,7 @@ export const profileSchema = z
 
     summary: z.string().trim().max(1200, "Max 1200 chars").optional(),
 
-    links: z.array(profileLinkSchema).max(12, "Max 12 links").optional()
+    links: z.array(profileLinkSchema).max(12, "Max 12 links").optional(),
   })
   .superRefine((val, ctx) => {
     // avoid base64 data URL
@@ -56,7 +86,7 @@ export const profileSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["avatarUrl"],
-        message: "Use uploaded URL (Storage), not base64 data URL"
+        message: "Use uploaded URL (Storage), not base64 data URL",
       });
     }
 
@@ -70,7 +100,7 @@ export const profileSchema = z
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["links", i, "url"],
-            message: "Duplicate URL"
+            message: "Duplicate URL",
           });
         }
         seen.add(u);
@@ -85,11 +115,11 @@ export const experienceItemSchema = z.object({
   id: z.string().optional(),
   company: trimmed(80),
   role: trimmed(80),
-  employment_type:z.string(),
-  start: z.coerce.date().transform((val) => val.toISOString().split('T')[0]),
+  employment_type: z.string(),
+  start: z.coerce.date().transform((val) => val.toISOString().split("T")[0]),
   end: z.coerce.date().optional().or(z.literal("")),
   location: optionalTrimmed(80),
-  highlights: z.array(z.string().trim().min(1)).max(12).optional()
+  highlights: z.array(z.string().trim().min(1)).max(12).optional(),
 });
 
 export const educationItemSchema = z.object({
@@ -97,9 +127,9 @@ export const educationItemSchema = z.object({
   college: trimmed(120),
   degree: optionalTrimmed(80),
   field: optionalTrimmed(80),
-  start: z.coerce.date().transform((val) => val.toISOString().split('T')[0]),
+  start: z.coerce.date().transform((val) => val.toISOString().split("T")[0]),
   end: z.coerce.date().optional().or(z.literal("")),
-  gpa: optionalTrimmed(20)
+  gpa: optionalTrimmed(20),
 });
 
 /**
@@ -114,8 +144,8 @@ export const extrasSchema = z
         z.object({
           name: trimmed(120),
           issuer: optionalTrimmed(80),
-          date: z.coerce.date().transform((val) => val.toISOString().split('T')[0]),
-          url: urlSchema.optional()
+          date: z.coerce.date().transform((val) => val.toISOString().split("T")[0]),
+          url: urlSchema.optional(),
         })
       )
       .max(50)
@@ -124,7 +154,7 @@ export const extrasSchema = z
       .array(
         z.object({
           name: trimmed(60),
-          level: optionalTrimmed(30)
+          level: optionalTrimmed(30),
         })
       )
       .max(30)
@@ -134,20 +164,21 @@ export const extrasSchema = z
         z.object({
           name: trimmed(120),
           description: z.string().trim().max(800).optional(),
-          url: urlSchema.optional()
+          url: urlSchema.optional(),
         })
       )
       .max(50)
-      .optional()
+      .optional(),
   })
   .passthrough();
 
 /**
  * Meta (optional DAY 1)
+ * templateId sekarang divalidasi hanya boleh template yang ada
  */
 export const metaSchema = z.object({
   title: trimmed(80).optional(),
-  templateId: trimmed(40).optional()
+  templateId: TemplateIdSchema.optional(),
 });
 
 /**
@@ -155,7 +186,15 @@ export const metaSchema = z.object({
  */
 export const patchMetaBody = metaSchema;
 export const patchProfileBody = z.object({ profile: profileSchema });
-export const patchExperienceBody = z.object({ experience: z.array(experienceItemSchema).max(50) });
-export const patchEducationBody = z.object({ education: z.array(educationItemSchema).max(50) });
+export const patchExperienceBody = z.object({
+  experience: z.array(experienceItemSchema).max(50),
+});
+export const patchEducationBody = z.object({
+  education: z.array(educationItemSchema).max(50),
+});
 export const patchSkillsBody = z.object({ skills: skillsSchema });
 export const patchExtrasBody = z.object({ extras: extrasSchema });
+
+// ===== Bodies (ADD) =====
+export const patchThemeBody = z.object({ theme: themeSchema });
+export const patchSectionOrderBody = z.object({ sectionOrder: sectionOrderSchema });

@@ -5,6 +5,7 @@ import { errorHandler } from "../middleware/error";
 import { router } from "../routes/resume-route";
 import { accountRoutes } from "../routes/account-route";
 import { authRoutes } from "../routes/auth-route";
+import {templateRouter} from "../routes/template-route"
 
 export const app = express();
 
@@ -16,5 +17,6 @@ app.get("/health", (_, res) => res.json({ ok: true }));
 app.use("/api/v1", accountRoutes);
 app.use("/api/v1", router);
 app.use("/api/v1", authRoutes);
+app.use("/api/v1", templateRouter)
 
 app.use(errorHandler);

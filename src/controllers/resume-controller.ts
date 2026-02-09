@@ -7,6 +7,8 @@ import {
   patchEducationBody,
   patchSkillsBody,
   patchExtrasBody,
+  patchThemeBody, 
+  patchSectionOrderBody
 } from "../validator/resume-validator";
 
 const svc = new ResumeService();
@@ -124,4 +126,26 @@ export class ResumeController {
     const row = await svc.duplicateById(req.accessToken!, req.userId!, resumeId);
     res.status(201).json(row);
   };
+
+  patchThemeById = async (req: Request, res: Response) => {
+  const parsed = patchThemeBody.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ errors: parsed.error.flatten() });
+
+  const resumeId = mustParamId(req, "id");
+  const row = await svc.patchSectionById(req.accessToken!, req.userId!, resumeId, {
+    theme: parsed.data.theme,
+  });
+  res.json(row);
+};
+
+patchSectionOrderById = async (req: Request, res: Response) => {
+  const parsed = patchSectionOrderBody.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ errors: parsed.error.flatten() });
+
+  const resumeId = mustParamId(req, "id");
+  const row = await svc.patchSectionById(req.accessToken!, req.userId!, resumeId, {
+    sectionOrder: parsed.data.sectionOrder,
+  });
+  res.json(row);
+};
 }
