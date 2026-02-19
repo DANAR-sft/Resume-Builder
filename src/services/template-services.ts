@@ -1,16 +1,21 @@
-// Hapus TEMPLATES dan TemplateMeta yang lama
-export type TemplateId = string; // Jadi bebas, tidak hanya "ats-1" | "ats-2"
+export const TEMPLATE_IDS = [
+  "ats-1",
+  "executive-1",
+  "modern-tech-1",
+] as const;
+
+export type TemplateId = (typeof TEMPLATE_IDS)[number];
+
+export function isTemplateId(v: string): v is TemplateId {
+  return (TEMPLATE_IDS as readonly string[]).includes(v);
+}
 
 export class TemplateService {
-    // Karena tidak ada daftar tetap, kita bisa menganggap ID apa saja valid 
-    // selama tidak kosong, atau kamu bisa mengecek ke tabel khusus di Supabase jika ada.
-    exists(templateId: string): boolean {
-        return templateId.length > 0; 
-    }
+  listIds(): TemplateId[] {
+    return [...TEMPLATE_IDS];
+  }
 
-    // Jika FE tetap butuh daftar ID template untuk ditampilkan di UI, 
-    // kamu bisa mengembalikan array string sederhana saja.
-    listIds(): string[] {
-        return ["ats-1", "minimalist-1", "executive-1","modern tech-1"];
-    }
+  exists(templateId: string): boolean {
+    return isTemplateId(templateId);
+  }
 }

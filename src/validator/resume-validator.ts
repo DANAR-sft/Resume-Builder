@@ -11,7 +11,7 @@ const optionalTrimmed = (max: number) =>
 const urlSchema = z.string().trim().url("Invalid URL");
 
 // ===== Templates (ADD) =====
-export const TemplateIdSchema = z.enum(["ats-1", "ats-2", "minimalist-1", "executive-1","modern tech-1"]);
+export const TemplateIdSchema = z.enum(["ats-1", "minimalist-1", "executive-1","modern tech-1"]);
 
 // ===== Theme (ADD) =====
 export const themeSchema = z.object({

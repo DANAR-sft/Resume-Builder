@@ -12,8 +12,7 @@ export type ResumeRow = {
 
 const DEFAULT_DATA = {
   theme: { 
-  primaryColor: "#111827", 
-  fontFamily: "Inter",
+  fontFamily: "",
   fontSize: "11px",
   pagePadding: "10mm"
 },
@@ -79,9 +78,6 @@ export class ResumeService {
     return data as ResumeRow;
   }
 
-  // =========================
-  // BY ID (untuk multi resume)
-  // =========================
 
   async getById(
     accessToken: string,

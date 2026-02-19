@@ -1,0 +1,725 @@
+openapi: 3.0.3
+info:
+  title: Resume Builder API
+  version: 1.0.0
+  description: Auth (Supabase direct) + Resume endpoints (Express /api/v1)
+
+servers:
+  - url: http://localhost:5000
+    description: Local API
+  - url: https://pzajszjjbmdmrdzwaqrc.supabase.co
+    description: Supabase Project URL (for /auth/v1/*)
+
+tags:
+  - name: Auth
+    description: Supabase Authentication endpoints
+  - name: Resume
+    description: Resume CRUD & section patching (requires Bearer token)
+  - name: Template
+    description: List available resume templates (IDs only)
+
+paths:
+  /auth/v1/signup:
+    post:
+      tags: [Auth]
+      summary: Register (Sign Up)
+      description: Create a new user with email & password.
+      parameters:
+        - $ref: "#/components/parameters/ApiKeyHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+            examples:
+              example:
+                value:
+                  email: user@mail.com
+                  password: "secret12345"
+                  data:
+                    full_name: "User Example"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/SupabaseErrorResponse"
+        "422":
+          $ref: "#/components/responses/SupabaseErrorResponse"
+
+  /auth/v1/token:
+    post:
+      tags: [Auth]
+      summary: Login (Password Grant)
+      description: Login using password grant. Supabase uses query param grant_type=password.
+      parameters:
+        - $ref: "#/components/parameters/ApiKeyHeader"
+        - name: grant_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [password]
+          example: password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            examples:
+              example:
+                value:
+                  email: user@mail.com
+                  password: "secret12345"
+      responses:
+        "200":
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "400":
+          $ref: "#/components/responses/SupabaseErrorResponse"
+        "401":
+          $ref: "#/components/responses/SupabaseErrorResponse"
+
+  /auth/v1/logout:
+    post:
+      tags: [Auth]
+      summary: Logout
+      description: Invalidate the current access token (sign out).
+      parameters:
+        - $ref: "#/components/parameters/ApiKeyHeader"
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: No Content (logout success)
+        "200":
+          description: Some environments may return JSON success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+              example:
+                success: true
+        "401":
+          $ref: "#/components/responses/SupabaseErrorResponse"
+        "400":
+          $ref: "#/components/responses/SupabaseErrorResponse"
+
+  /api/v1/resumes:
+    get:
+      tags: [Resume]
+      summary: List resumes (current user)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of resumes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ResumeRow"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Resume]
+      summary: Create a new resume
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchMetaRequest"
+            examples:
+              default:
+                value:
+                  title: "My Resume"
+                  templateId: "ats-1"
+      responses:
+        "201":
+          description: Resume created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeRow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/resumes/{id}:
+    get:
+      tags: [Resume]
+      summary: Get resume by id (owned by current user)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResumeId"
+      responses:
+        "200":
+          description: Resume row (or null)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ResumeRow"
+                nullable: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    delete:
+      tags: [Resume]
+      summary: Delete resume by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResumeId"
+      responses:
+        "204":
+          description: Deleted (no content)
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/resumes/{id}/meta:
+    patch:
+      tags: [Resume]
+      summary: Patch resume meta (title/template)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResumeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchMetaRequest"
+      responses:
+        "200":
+          description: Updated resume row
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeRow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/resumes/{id}/sections/profile:
+    patch:
+      tags: [Resume]
+      summary: Patch profile section
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResumeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchProfileRequest"
+      responses:
+        "200":
+          description: Updated resume row
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeRow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/resumes/{id}/sections/experience:
+    patch:
+      tags: [Resume]
+      summary: Replace experience section
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResumeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchExperienceRequest"
+      responses:
+        "200":
+          description: Updated resume row
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeRow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/resumes/{id}/sections/education:
+    patch:
+      tags: [Resume]
+      summary: Replace education section
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResumeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchEducationRequest"
+      responses:
+        "200":
+          description: Updated resume row
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeRow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/resumes/{id}/sections/skills:
+    patch:
+      tags: [Resume]
+      summary: Replace skills section
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResumeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchSkillsRequest"
+      responses:
+        "200":
+          description: Updated resume row
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeRow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/resumes/{id}/sections/extras:
+    patch:
+      tags: [Resume]
+      summary: Patch extras section
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResumeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchExtrasRequest"
+      responses:
+        "200":
+          description: Updated resume row
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeRow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/resumes/{id}/theme:
+    patch:
+      tags: [Resume]
+      summary: Patch theme settings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResumeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchThemeRequest"
+      responses:
+        "200":
+          description: Updated resume row
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeRow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/resumes/{id}/section-order:
+    patch:
+      tags: [Resume]
+      summary: Patch section order
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResumeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchSectionOrderRequest"
+      responses:
+        "200":
+          description: Updated resume row
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeRow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/resumes/{id}/duplicate:
+    post:
+      tags: [Resume]
+      summary: Duplicate resume by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResumeId"
+      responses:
+        "201":
+          description: Resume duplicated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeRow"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/templates:
+    get:
+      tags: [Template]
+      summary: List available resume template IDs
+      description: Returns template IDs only. Styling is handled by frontend.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateListResponse"
+              examples:
+                example:
+                  value:
+                    availableTemplates:
+                      - ats-1
+                      - executive-1
+                      - modern-tech-1
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    ApiKeyHeader:
+      name: apikey
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Supabase anon key (apikey header)
+
+    ResumeId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Resume ID
+
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    BadRequest:
+      description: Bad Request (validation failed)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    SupabaseErrorResponse:
+      description: Supabase error response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SupabaseError"
+
+  schemas:
+    SignupRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        data:
+          type: object
+          additionalProperties: true
+          description: Optional user metadata
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        session:
+          $ref: "#/components/schemas/Session"
+        access_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+        refresh_token:
+          type: string
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+        expires_at:
+          type: integer
+          nullable: true
+        refresh_token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+        session:
+          $ref: "#/components/schemas/Session"
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          nullable: true
+        user_metadata:
+          type: object
+          additionalProperties: true
+        app_metadata:
+          type: object
+          additionalProperties: true
+
+    Session:
+      type: object
+      nullable: true
+      properties:
+        access_token:
+          type: string
+          nullable: true
+        token_type:
+          type: string
+          nullable: true
+        expires_in:
+          type: integer
+          nullable: true
+        expires_at:
+          type: integer
+          nullable: true
+        refresh_token:
+          type: string
+          nullable: true
+        user:
+          $ref: "#/components/schemas/User"
+
+    SupabaseError:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        error_description:
+          type: string
+          nullable: true
+        message:
+          type: string
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        errors:
+          type: object
+          nullable: true
+          additionalProperties: true
+
+    ResumeRow:
+      type: object
+      required: [id, user_id, title, template_id, data, created_at, updated_at]
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        title:
+          type: string
+        template_id:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PatchMetaRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          nullable: true
+        templateId:
+          type: string
+          nullable: true
+
+    PatchProfileRequest:
+      type: object
+      required: [profile]
+      properties:
+        profile:
+          type: object
+          additionalProperties: true
+
+    PatchExperienceRequest:
+      type: object
+      required: [experience]
+      properties:
+        experience:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    PatchEducationRequest:
+      type: object
+      required: [education]
+      properties:
+        education:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    PatchSkillsRequest:
+      type: object
+      required: [skills]
+      properties:
+        skills:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    PatchExtrasRequest:
+      type: object
+      required: [extras]
+      properties:
+        extras:
+          type: object
+          additionalProperties: true
+
+    PatchThemeRequest:
+      type: object
+      required: [theme]
+      properties:
+        theme:
+          type: object
+          properties:
+            fontFamily:
+              type: string
+            fontSize:
+              type: string
+            pagePadding:
+              type: string
+          additionalProperties: false
+
+    PatchSectionOrderRequest:
+      type: object
+      required: [sectionOrder]
+      properties:
+        sectionOrder:
+          type: array
+          items:
+            type: string
+
+    TemplateListResponse:
+      type: object
+      required: [availableTemplates]
+      properties:
+        availableTemplates:
+          type: array
+          items:
+            type: string
