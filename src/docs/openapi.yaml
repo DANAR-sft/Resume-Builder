@@ -19,9 +19,6 @@ tags:
     description: List available resume templates (IDs only)
 
 paths:
-  # =========================
-  # AUTH (SUPABASE DIRECT)
-  # =========================
   /auth/v1/signup:
     post:
       tags: [Auth]
