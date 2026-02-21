@@ -19,7 +19,7 @@ tags:
     description: List available resume templates (IDs only)
 
 paths:
-  /auth/v1/signup:
+  /api/auth/v1/signup:
     post:
       tags: [Auth]
       summary: Register (Sign Up)
@@ -51,7 +51,7 @@ paths:
         "422":
           $ref: "#/components/responses/SupabaseErrorResponse"
 
-  /auth/v1/token:
+  /api/auth/v1/token:
     post:
       tags: [Auth]
       summary: Login (Password Grant)
@@ -88,7 +88,7 @@ paths:
         "401":
           $ref: "#/components/responses/SupabaseErrorResponse"
 
-  /auth/v1/logout:
+  /api/auth/v1/logout:
     post:
       tags: [Auth]
       summary: Logout
