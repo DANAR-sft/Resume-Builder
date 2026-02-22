@@ -11,23 +11,29 @@ const optionalTrimmed = (max: number) =>
 const urlSchema = z.string().trim().url("Invalid URL");
 
 // ===== Templates (ADD) =====
-export const TemplateIdSchema = z.enum(["ats-1", "executive-1","modern-tech-1"]);
+export const TemplateIdSchema = z.enum([
+  "ats-1",
+  "executive-1",
+  "modern-tech-1",
+]);
 
 // ===== Theme (ADD) =====
-export const themeSchema = z.object({
-  primaryColor: z
-    .string()
-    .trim()
-    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Invalid hex color"),
-  fontFamily: z.string().trim().min(1),
-  fontSize: z.string().trim().default("11px"),
-  pagePadding: z.string().trim().default("10mm"),
-}).refine((data) => {
-  // Opsi tambahan: Kamu bisa memvalidasi apakah font/warna tersebut 
-  // benar-benar didukung oleh templateId yang dipilih user.
-  // Tapi untuk tahap awal, validator string biasa sudah cukup.
-  return true;
-});
+export const themeSchema = z
+  .object({
+    primaryColor: z
+      .string()
+      .trim()
+      .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Invalid hex color"),
+    fontFamily: z.string().trim().min(1),
+    fontSize: z.string().trim().default("11px"),
+    pagePadding: z.string().trim().default("10mm"),
+  })
+  .refine((data) => {
+    // Opsi tambahan: Kamu bisa memvalidasi apakah font/warna tersebut
+    // benar-benar didukung oleh templateId yang dipilih user.
+    // Tapi untuk tahap awal, validator string biasa sudah cukup.
+    return true;
+  });
 
 // ===== Section order (ADD) =====
 export const sectionKeySchema = z.enum([
@@ -144,9 +150,11 @@ export const extrasSchema = z
         z.object({
           name: trimmed(120),
           issuer: optionalTrimmed(80),
-          date: z.coerce.date().transform((val) => val.toISOString().split("T")[0]),
+          date: z.coerce
+            .date()
+            .transform((val) => val.toISOString().split("T")[0]),
           url: urlSchema.optional(),
-        })
+        }),
       )
       .max(50)
       .optional(),
@@ -155,7 +163,7 @@ export const extrasSchema = z
         z.object({
           name: trimmed(60),
           level: optionalTrimmed(30),
-        })
+        }),
       )
       .max(30)
       .optional(),
@@ -165,7 +173,7 @@ export const extrasSchema = z
           name: trimmed(120),
           description: z.string().trim().max(800).optional(),
           url: urlSchema.optional(),
-        })
+        }),
       )
       .max(50)
       .optional(),
@@ -197,4 +205,6 @@ export const patchExtrasBody = z.object({ extras: extrasSchema });
 
 // ===== Bodies (ADD) =====
 export const patchThemeBody = z.object({ theme: themeSchema });
-export const patchSectionOrderBody = z.object({ sectionOrder: sectionOrderSchema });
+export const patchSectionOrderBody = z.object({
+  sectionOrder: sectionOrderSchema,
+});
