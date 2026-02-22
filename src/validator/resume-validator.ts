@@ -20,18 +20,11 @@ export const TemplateIdSchema = z.enum([
 // ===== Theme (ADD) =====
 export const themeSchema = z
   .object({
-    primaryColor: z
-      .string()
-      .trim()
-      .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Invalid hex color"),
     fontFamily: z.string().trim().min(1),
     fontSize: z.string().trim().default("11px"),
     pagePadding: z.string().trim().default("10mm"),
   })
   .refine((data) => {
-    // Opsi tambahan: Kamu bisa memvalidasi apakah font/warna tersebut
-    // benar-benar didukung oleh templateId yang dipilih user.
-    // Tapi untuk tahap awal, validator string biasa sudah cukup.
     return true;
   });
 
@@ -181,7 +174,7 @@ export const extrasSchema = z
   .passthrough();
 
 /**
- * Meta (optional DAY 1)
+ * Meta
  * templateId sekarang divalidasi hanya boleh template yang ada
  */
 export const metaSchema = z.object({
