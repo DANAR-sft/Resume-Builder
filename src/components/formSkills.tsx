@@ -1,156 +1,210 @@
 import React from "react";
-import Link from "next/link";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
-  CardContent,
-  CardFooter,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { ISkill } from "../../types";
+// Local type for skill items with id and level (UI helper)
+type SkillItem = { id: string; skillName: string };
 
 export function FormSkills({
   setStep,
   step,
+  onChangeSkills,
+  initial,
 }: {
   setStep: (value: number) => void;
   step: number;
+  onChangeSkills?: (skills: { id: string; skillName: string }[]) => void;
+  initial?: any[];
 }) {
-  const levels = ["novice", "beginner", "skillful", "experienced", "expert"];
-  const [skills, setSkills] = React.useState<Array<ISkill>>(() => [
-    {
-      id:
-        typeof crypto !== "undefined"
-          ? crypto.randomUUID()
-          : String(Date.now()),
-      skillName: "",
-      level: ["beginner"],
-    },
-  ]);
+  const [skills, setSkills] = React.useState<string[]>(() => {
+    if (!initial || initial.length === 0) return [""];
+    return initial.map((s) => (typeof s === "string" ? s : s.skillName || ""));
+  });
 
-  const addSkill = () =>
-    setSkills((prev) => [
-      ...prev,
-      {
-        id:
-          typeof crypto !== "undefined"
-            ? crypto.randomUUID()
-            : String(Date.now()),
-        skillName: "",
-        level: ["beginner"],
-      },
-    ]);
+  const didInitEmit = React.useRef(false);
 
-  const updateSkillName = (index: number, value: string) =>
-    setSkills((prev) =>
-      prev.map((s, i) => (i === index ? { ...s, skillName: value } : s)),
+  // Re-sync when initial data arrives from fetch ONLY if skills are empty or hasn't been touched yet
+  React.useEffect(() => {
+    if (!initial || initial.length === 0) return;
+    const initialStrings = initial.map((s: any) =>
+      typeof s === "string" ? s : s.skillName || "",
     );
 
-  const updateSkillLevel = (index: number, value: string) =>
-    setSkills((prev) =>
-      prev.map((s, i) => (i === index ? { ...s, level: [value] } : s)),
-    );
+    if (JSON.stringify(skills) !== JSON.stringify(initialStrings)) {
+      setSkills(initialStrings);
+    }
+  }, [initial]);
+
+  React.useEffect(() => {
+    if (!didInitEmit.current) {
+      didInitEmit.current = true;
+      return;
+    }
+    // Mapping back to what the parent expects
+    onChangeSkills?.(skills.map((s, i) => ({ id: String(i), skillName: s })));
+  }, [skills, onChangeSkills]);
+
+  const addSkill = () => setSkills((prev) => [...prev, ""]);
+
+  const updateSkillName = (index: number, value: string) => {
+    setSkills((prev) => {
+      const newSkills = [...prev];
+      newSkills[index] = value;
+      return newSkills;
+    });
+  };
 
   const removeSkill = (index: number) =>
     setSkills((prev) => prev.filter((_, i) => i !== index));
 
   return (
-    <div className="flex flex-1 flex-col ">
-      <div>
-        <Card className="flex flex-1 px-4 py-10 overflow-y-auto h-170">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">Skills</CardTitle>
-            <CardDescription>
-              Add your skills and select proficiency level.
-            </CardDescription>
-          </CardHeader>
+    <div className="flex flex-col animate-fade-in-up">
+      <Card className="border-none shadow-none bg-transparent">
+        <CardHeader className="px-0 pt-0 pb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-gradient-blue flex items-center justify-center text-white shadow-blue shrink-0">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+            </div>
+            <div>
+              <CardTitle className="text-xl md:text-2xl font-bold text-slate-900 leading-tight">
+                Skills & Expertise
+              </CardTitle>
+              <CardDescription className="text-slate-500 text-sm mt-1">
+                Highlight your core strengths and technical proficiency.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
 
-          <form>
-            <CardContent className="flex flex-col">
-              {skills.map((skill, idx) => (
-                <div
-                  key={skill.id}
-                  className="flex flex-row items-start gap-6 mb-6"
-                >
-                  <input
-                    type="hidden"
-                    name={`skills[${idx}].id`}
-                    value={skill.id}
-                  />
-                  <div className="flex-1">
-                    <Label htmlFor={`skillName-${idx}`} className="mb-2">
-                      Skill
-                    </Label>
-                    <Input
-                      id={`skillName-${idx}`}
-                      name={`skills[${idx}].skillName`}
-                      type="text"
-                      value={skill.skillName}
-                      onChange={(e) => updateSkillName(idx, e.target.value)}
-                      className="mb-2"
-                    />
-
-                    <Label htmlFor={`skillLevel-${idx}`} className="mb-2">
-                      Level
-                    </Label>
-                    <select
-                      id={`skillLevel-${idx}`}
-                      name={`skills[${idx}].level`}
-                      value={skill.level[0]}
-                      onChange={(e) => updateSkillLevel(idx, e.target.value)}
-                      className="w-full mb-2 rounded-md border px-3 py-2"
+        <form className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            {skills.map((skillName, idx) => (
+              <div
+                key={idx}
+                className="group relative bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-smooth animate-fade-in flex flex-col gap-4"
+              >
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      removeSkill(idx);
+                    }}
+                    className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      {levels.map((l) => (
-                        <option key={l} value={l}>
-                          {l.charAt(0).toUpperCase() + l.slice(1)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {}
-                  <div className="flex flex-col mt-5.5 gap-2">
-                    <Button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        removeSkill(idx);
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </div>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </Button>
                 </div>
-              ))}
 
-              <div className="mt-2">
-                <span
-                  onClick={(e) => {
-                    e.preventDefault();
-                    addSkill();
-                  }}
-                  className="text-sm text-blue-500 hover:text-blue-800 cursor-pointer"
-                >
-                  + Add one more skill
-                </span>
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor={`skillName-${idx}`}
+                    className="text-xs font-bold text-slate-500 uppercase tracking-wider"
+                  >
+                    Skill Name
+                  </Label>
+                  <Input
+                    id={`skillName-${idx}`}
+                    name={`skills[${idx}].skillName`}
+                    type="text"
+                    placeholder="e.g. React.js"
+                    className="h-10 rounded-xl border-slate-200 focus:border-blue-500 transition-smooth"
+                    value={skillName}
+                    onChange={(e) => updateSkillName(idx, e.target.value)}
+                  />
+                </div>
               </div>
-            </CardContent>
-          </form>
-        </Card>
+            ))}
 
-        <div className="flex flex-row px-9 py-6 gap-10 justify-between items-center">
-          {step > 3 && (
-            <Button className="px-8 py-6" onClick={() => setStep(3)}>
-              Back
+            <Button
+              type="button"
+              variant="outline"
+              className="py-10 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/30 transition-smooth font-bold flex flex-col items-center gap-2 group h-full justify-center"
+              onClick={(e) => {
+                e.preventDefault();
+                addSkill();
+              }}
+            >
+              <div className="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-blue-100 flex items-center justify-center transition-smooth text-lg">
+                +
+              </div>
+              <span className="text-xs">Add Skill</span>
             </Button>
-          )}
-          <Button className="px-8 py-6" onClick={() => setStep(5)}>
-            Next: Additional Sections
-          </Button>
-        </div>
+          </div>
+        </form>
+      </Card>
+
+      <div className="mt-12 pt-8 border-t border-slate-100 flex items-center justify-between gap-4">
+        <Button
+          variant="ghost"
+          className="px-6 h-12 text-slate-500 hover:bg-slate-50 font-bold rounded-2xl"
+          onClick={() => setStep(3)}
+        >
+          <svg
+            className="w-4 h-4 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          Back
+        </Button>
+        <Button
+          className="px-8 h-12 bg-gradient-blue text-white shadow-blue font-bold rounded-2xl hover-lift transition-smooth flex items-center justify-center gap-2 group"
+          onClick={() => setStep(5)}
+        >
+          <span>Next: Extra Details</span>
+          <svg
+            className="w-4 h-4 transition-transform group-hover:translate-x-1"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </Button>
       </div>
     </div>
   );

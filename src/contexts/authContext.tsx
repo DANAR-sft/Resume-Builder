@@ -7,48 +7,49 @@ import {
   useEffect,
   ReactNode,
 } from "react";
-import { IAuthContextType } from "../../types/types";
 import { getCurrentUser } from "../../actions/auth-action";
-const AuthContext = createContext<IAuthContextType | undefined>(undefined);
+
+type AuthContextType = {
+  isLogin: boolean;
+  setIsLogin: (value: boolean) => void;
+  refreshAuth: () => Promise<void>;
+  isUser: string;
+  setIsUser: (value: string) => void;
+};
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLogin, setIsLogin] = useState<boolean>(false);
   const [isUser, setIsUser] = useState<string>("");
 
-  const getUser = async () => {
+  const refreshAuth = async (retries = 3, delayMs = 200) => {
     try {
-      const user = await getCurrentUser();
+      let user = null;
+      for (let i = 0; i < retries; i++) {
+        user = await getCurrentUser();
+        if (user) break;
 
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+      setIsLogin(!!user);
       if (user && user.user_metadata && user.user_metadata.display_name) {
         setIsUser(user.user_metadata.display_name);
-      } else {
-        setIsUser("");
       }
-      console.log("getUser >>>", user);
-    } catch (error) {
-      console.log("getUser error >>>", error);
-      setIsUser("");
-    }
-  };
-
-  const refreshAuth = async () => {
-    try {
-      const user = await getCurrentUser();
-      setIsLogin(!!user);
     } catch (err) {
       console.log("getCurrentUser error >>>", err);
       setIsLogin(false);
+      setIsUser("");
     }
   };
 
   useEffect(() => {
     refreshAuth();
-    getUser();
-  }, [getUser, refreshAuth]);
+  }, []);
 
   return (
     <AuthContext.Provider
-      value={{ isLogin, setIsLogin, refreshAuth, isUser, setIsUser, getUser }}
+      value={{ isLogin, setIsLogin, refreshAuth, isUser, setIsUser }}
     >
       {children}
     </AuthContext.Provider>

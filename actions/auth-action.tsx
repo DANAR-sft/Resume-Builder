@@ -7,7 +7,6 @@ export async function signUpNewUser(
   email: string,
   password: string,
 ) {
-  // Use server client so cookies (session) are set on the server response
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email: email,
@@ -21,7 +20,6 @@ export async function signUpNewUser(
 }
 
 export async function signInWithEmail(email: string, password: string) {
-  // Use server client so cookies (session) are set on the server response
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({
     email: email,
@@ -33,6 +31,14 @@ export async function signInWithEmail(email: string, password: string) {
 
 export async function signOutUser() {
   const supabase = await createClient();
+
+  try {
+    const { authApi } = await import("@/lib/api/auth-api");
+    await authApi.logout();
+  } catch (error) {
+    console.error("Backend logout failed:", error);
+  }
+
   const { error } = await supabase.auth.signOut();
   if (error) {
     return { ok: false, error };
