@@ -9,7 +9,30 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { ProfileSection } from "@/types/resume";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ProfileSection, ProfileLink, LinkType } from "@/types/resume";
+
+const LINK_TYPES: { value: LinkType; label: string }[] = [
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "github", label: "GitHub" },
+  { value: "portfolio", label: "Portfolio" },
+  { value: "website", label: "Website" },
+  { value: "behance", label: "Behance" },
+  { value: "dribbble", label: "Dribbble" },
+  { value: "medium", label: "Medium" },
+  { value: "kaggle", label: "Kaggle" },
+  { value: "stackoverflow", label: "Stack Overflow" },
+  { value: "twitter", label: "Twitter" },
+  { value: "instagram", label: "Instagram" },
+  { value: "youtube", label: "YouTube" },
+  { value: "other", label: "Other" },
+];
 
 interface FormPersonalDataProps {
   setStep: (value: number) => void;
@@ -30,9 +53,11 @@ export function FormPersonalData({
   const [phone, setPhone] = useState(initial?.phone || "");
   const [location, setLocation] = useState(initial?.location || "");
   const [summary, setSummary] = useState(initial?.summary || "");
-  const [links, setLinks] = useState<string[]>(
+  const [links, setLinks] = useState<ProfileLink[]>(
     (initial?.links || []).map((l: any) =>
-      typeof l === "string" ? l : l.url || "",
+      typeof l === "string"
+        ? { label: "", url: l }
+        : { label: l.label || "", url: l.url || "", type: l.type },
     ),
   );
 
@@ -55,7 +80,9 @@ export function FormPersonalData({
     setSummary(initial.summary || "");
     setLinks(
       (initial.links || []).map((l: any) =>
-        typeof l === "string" ? l : l.url || "",
+        typeof l === "string"
+          ? { label: "", url: l }
+          : { label: l.label || "", url: l.url || "", type: l.type },
       ),
     );
   }, [initial]);
@@ -75,7 +102,7 @@ export function FormPersonalData({
   useEffect(() => {
     if (
       isSimilar(summary, location) ||
-      links.some((l) => isSimilar(l, summary))
+      links.some((l) => isSimilar(l.url, summary))
     ) {
       setSimilarWarning(
         "Profile summary looks similar to location or links — consider making it distinct.",
@@ -97,7 +124,7 @@ export function FormPersonalData({
       phone,
       location: location || undefined,
       summary,
-      links: links.map((url) => ({ url })),
+      links,
     });
   }, [
     fullName,
@@ -266,7 +293,7 @@ export function FormPersonalData({
                 className="h-8 rounded-lg text-blue-600 border-blue-100 hover:bg-blue-50 font-bold"
                 onClick={(e) => {
                   e.preventDefault();
-                  setLinks((prev) => [...prev, ""]);
+                  setLinks((prev) => [...prev, { label: "", url: "" }]);
                 }}
               >
                 <span className="mr-1.5">+</span> Add Link
@@ -277,18 +304,50 @@ export function FormPersonalData({
               {links.map((l, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-2 group animate-fade-in"
+                  className="flex flex-col sm:flex-row items-center gap-2 group animate-fade-in"
                 >
+                  <Select
+                    value={l.type || "other"}
+                    onValueChange={(val: LinkType) => {
+                      const selectedObj = LINK_TYPES.find(
+                        (t) => t.value === val,
+                      );
+                      setLinks((prev) =>
+                        prev.map((p, i) =>
+                          i === idx
+                            ? {
+                                ...p,
+                                type: val,
+                                label: selectedObj?.label || "",
+                              }
+                            : p,
+                        ),
+                      );
+                    }}
+                  >
+                    <SelectTrigger className="w-full sm:w-1/3 h-10 rounded-xl border-slate-200 focus:border-blue-500 transition-smooth bg-white">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LINK_TYPES.map((typeObj) => (
+                        <SelectItem key={typeObj.value} value={typeObj.value}>
+                          {typeObj.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Input
-                    id={`link-${idx}`}
-                    name={`links[${idx}]`}
+                    id={`link-url-${idx}`}
+                    name={`links[${idx}].url`}
                     type="url"
                     placeholder="https://linkedin.com/in/username"
-                    className="h-10 rounded-xl border-slate-200 focus:border-blue-500 transition-smooth"
-                    value={l}
+                    className="h-10 w-full sm:w-2/3 rounded-xl border-slate-200 focus:border-blue-500 transition-smooth"
+                    value={l.url}
                     onChange={(e) =>
                       setLinks((prev) =>
-                        prev.map((p, i) => (i === idx ? e.target.value : p)),
+                        prev.map((p, i) =>
+                          i === idx ? { ...p, url: e.target.value } : p,
+                        ),
                       )
                     }
                   />
