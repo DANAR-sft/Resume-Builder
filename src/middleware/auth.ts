@@ -19,10 +19,12 @@ export async function auth(req: Request, res: Response, next: NextFunction) {
   if (!token) return res.status(401).json({ message: "Missing Bearer token" });
 
   const { data, error } = await supabaseAnon.auth.getUser(token);
-  if (error || !data.user) return res.status(401).json({ message: "Invalid token" });
+  if (error || !data.user)
+    return res.status(401).json({ message: "Invalid token" });
 
   const md = (data.user.user_metadata ?? {}) as Record<string, any>;
-  const displayName = typeof md.display_name === "string" ? md.display_name : undefined;
+  const displayName =
+    typeof md.display_name === "string" ? md.display_name : undefined;
 
   req.accessToken = token;
   req.userId = data.user.id;
