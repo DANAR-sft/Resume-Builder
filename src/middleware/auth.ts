@@ -1,5 +1,4 @@
 import type { Request, Response, NextFunction } from "express";
-import { supabaseAnon } from "../supabase/clients";
 
 declare global {
   namespace Express {
@@ -16,20 +15,24 @@ export async function auth(req: Request, res: Response, next: NextFunction) {
   const h = req.headers.authorization;
   const token = h?.startsWith("Bearer ") ? h.slice(7) : null;
 
-  if (!token) return res.status(401).json({ message: "Missing Bearer token" });
+  if (!token) {
+    return res.status(401).json({ message: "Missing token" });
+  }
 
-  const { data, error } = await supabaseAnon.auth.getUser(token);
-  if (error || !data.user)
-    return res.status(401).json({ message: "Invalid token" });
+  try {
+    const base64Payload = token.split(".")[1];
+    if (!base64Payload) throw new Error("Invalid token format");
 
-  const md = (data.user.user_metadata ?? {}) as Record<string, any>;
-  const displayName =
-    typeof md.display_name === "string" ? md.display_name : undefined;
+    const payload = JSON.parse(Buffer.from(base64Payload, "base64").toString());
 
-  req.accessToken = token;
-  req.userId = data.user.id;
-  req.userEmail = data.user.email ?? undefined;
-  req.displayName = displayName;
+    req.accessToken = token;
+    req.userId = payload.sub;
+    req.userEmail = payload.email;
+    req.displayName = payload.user_metadata?.display_name;
 
-  next();
+    next();
+  } catch (e) {
+    console.error("Auth Middleware Error:", e);
+    return res.status(401).json({ message: "Invalid or malformed token" });
+  }
 }
