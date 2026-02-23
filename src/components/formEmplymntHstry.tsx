@@ -334,7 +334,7 @@ export function FormEmploymentHistory({
                             e.preventDefault();
                             removeHighlight(jIdx, idx);
                           }}
-                          className="h-10 w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl opacity-0 group-hover/h:opacity-100 transition-opacity"
+                          className="h-10 w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl md:opacity-0 md:group-hover/h:opacity-100 transition-opacity"
                         >
                           <svg
                             className="w-4 h-4"
