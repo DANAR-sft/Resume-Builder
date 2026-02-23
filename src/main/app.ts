@@ -11,10 +11,8 @@ import docsRoute from "../routes/docs-route";
 
 export const app = express();
 
-const allowedOrigins =
-  process.env.NODE_ENV === "production"
-    ? [process.env.FRONTEND_URL!]
-    : ["http://localhost:3000"];
+const allowedOrigins = process.env.FRONTEND_URL! || "http://localhost:3000";
+
 
 const corsOptions: cors.CorsOptions = {
   origin(origin, cb) {
