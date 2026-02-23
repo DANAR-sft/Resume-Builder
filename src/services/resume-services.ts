@@ -1,4 +1,4 @@
-import { supabaseRls } from "../supabase/clients";
+import { getSupabaseClient } from "../supabase/clients";
 
 export type ResumeRow = {
   id: string;
@@ -11,41 +11,28 @@ export type ResumeRow = {
 };
 
 const DEFAULT_DATA = {
-  theme: { 
-  fontFamily: "",
-  fontSize: "11px",
-  pagePadding: "10mm"
-},
+  theme: { fontFamily: "", fontSize: "11px", pagePadding: "10mm" },
   sectionOrder: ["profile", "experience", "education", "skills", "extras"],
-  profile: {
-    fullName: "",
-    headline: "",
-    avatarUrl: "",
-    email: "",
-    location: "",
-    summary: "",
-    links: [],
-  },
+  profile: { fullName: "", headline: "", avatarUrl: "", email: "", location: "", summary: "", links: [] },
   experience: [],
   education: [],
   skills: [],
   extras: {},
 };
 
-// arrays replaced, objects shallow-merged
 function mergeData(current: any, patch: any) {
   const base = current && typeof current === "object" ? current : {};
   return { ...DEFAULT_DATA, ...base, ...patch };
 }
 
 export class ResumeService {
+  // Helper internal untuk akses tabel
+  private table(token: string) {
+    return getSupabaseClient(token).from("resumes");
+  }
 
-  // List semua resume milik user
   async list(accessToken: string): Promise<ResumeRow[]> {
-    const sb = supabaseRls(accessToken);
-
-    const { data, error } = await sb
-      .from("resumes")
+    const { data, error } = await this.table(accessToken)
       .select("*")
       .order("updated_at", { ascending: false });
 
@@ -53,23 +40,19 @@ export class ResumeService {
     return (data as ResumeRow[]) ?? [];
   }
 
-  // Create resume baru
   async create(
     accessToken: string,
     userId: string,
     meta?: { title?: string; templateId?: string }
   ): Promise<ResumeRow> {
-    const sb = supabaseRls(accessToken);
-
-    const payload: any = {
+    const payload = {
       user_id: userId,
       title: meta?.title ?? "My Resume",
       template_id: meta?.templateId ?? "ats-1",
       data: DEFAULT_DATA,
     };
 
-    const { data, error } = await sb
-      .from("resumes")
+    const { data, error } = await this.table(accessToken)
       .insert(payload)
       .select("*")
       .single();
@@ -78,16 +61,12 @@ export class ResumeService {
     return data as ResumeRow;
   }
 
-
   async getById(
     accessToken: string,
     userId: string,
     resumeId: string
   ): Promise<ResumeRow | null> {
-    const sb = supabaseRls(accessToken);
-
-    const { data, error } = await sb
-      .from("resumes")
+    const { data, error } = await this.table(accessToken)
       .select("*")
       .eq("id", resumeId)
       .eq("user_id", userId)
@@ -103,14 +82,11 @@ export class ResumeService {
     resumeId: string,
     meta: { title?: string; templateId?: string }
   ): Promise<ResumeRow> {
-    const sb = supabaseRls(accessToken);
-
     const patch: any = {};
     if (meta.title !== undefined) patch.title = meta.title;
     if (meta.templateId !== undefined) patch.template_id = meta.templateId;
 
-    const { data, error } = await sb
-      .from("resumes")
+    const { data, error } = await this.table(accessToken)
       .update(patch)
       .eq("id", resumeId)
       .eq("user_id", userId)
@@ -127,15 +103,13 @@ export class ResumeService {
     resumeId: string,
     patch: any
   ): Promise<ResumeRow> {
-    const sb = supabaseRls(accessToken);
-
+    // Ambil data lama dulu karena tipe datanya JSONB
     const existing = await this.getById(accessToken, userId, resumeId);
     if (!existing) throw new Error("Resume not found");
 
     const nextData = mergeData(existing.data, patch);
 
-    const { data, error } = await sb
-      .from("resumes")
+    const { data, error } = await this.table(accessToken)
       .update({ data: nextData })
       .eq("id", resumeId)
       .eq("user_id", userId)
@@ -146,48 +120,32 @@ export class ResumeService {
     return data as ResumeRow;
   }
 
-  async deleteById(
-    accessToken: string,
-    userId: string,
-    resumeId: string
-  ): Promise<void> {
-    const sb = supabaseRls(accessToken);
-
-    const { error } = await sb
-      .from("resumes")
+  async deleteById(accessToken: string, userId: string, resumeId: string): Promise<void> {
+    const { error } = await this.table(accessToken)
       .delete()
       .eq("id", resumeId)
-      .eq("user_id", userId); // defense in depth
+      .eq("user_id", userId);
 
     if (error) throw new Error(error.message);
   }
 
-
-  // OPTIONAL: duplicate
-  async duplicateById(
-    accessToken: string,
-    userId: string,
-    resumeId: string
-  ): Promise<ResumeRow> {
+  async duplicateById(accessToken: string, userId: string, resumeId: string): Promise<ResumeRow> {
     const existing = await this.getById(accessToken, userId, resumeId);
     if (!existing) throw new Error("Resume not found");
 
-    return this.create(accessToken, userId, {
+    const created = await this.create(accessToken, userId, {
       title: `Copy of ${existing.title ?? "My Resume"}`,
       templateId: existing.template_id,
-    }).then(async (created) => {
-      // copy data
-      const sb = supabaseRls(accessToken);
-      const { data, error } = await sb
-        .from("resumes")
-        .update({ data: existing.data })
-        .eq("id", created.id)
-        .eq("user_id", userId)
-        .select("*")
-        .single();
-
-      if (error) throw new Error(error.message);
-      return data as ResumeRow;
     });
+
+    const { data, error } = await this.table(accessToken)
+      .update({ data: existing.data })
+      .eq("id", created.id)
+      .eq("user_id", userId)
+      .select("*")
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data as ResumeRow;
   }
 }
