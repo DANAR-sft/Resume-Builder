@@ -18,6 +18,15 @@ function asUrl(value: string): string {
   return `https://${v}`;
 }
 
+function formatDate(dateString: string | undefined | null): string {
+  if (!dateString) return "";
+  const [year, month] = dateString.split("-");
+  if (!year || !month) return dateString;
+
+  const date = new Date(parseInt(year), parseInt(month) - 1);
+  return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
 export function ModernTechTemplate({ data, styles }: ModernTechTemplateProps) {
   const profile = data.profile || ({} as any);
   const experience = data.experience || [];
@@ -139,7 +148,7 @@ export function ModernTechTemplate({ data, styles }: ModernTechTemplateProps) {
 
                       <div className="text-right text-[10px] text-slate-600">
                         <div>
-                          {job.start} – {job.end}
+                          {formatDate(job.start)} – {formatDate(job.end)}
                         </div>
                         {isNonEmpty(job.location) && <div>{job.location}</div>}
                       </div>
@@ -173,7 +182,7 @@ export function ModernTechTemplate({ data, styles }: ModernTechTemplateProps) {
                         </div>
                       </div>
                       <div className="text-right text-[10px] text-slate-600">
-                        {edu.start} – {edu.end}
+                        {formatDate(edu.start)} – {formatDate(edu.end)}
                       </div>
                     </div>
                   ))

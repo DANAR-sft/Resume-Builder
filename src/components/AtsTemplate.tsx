@@ -11,6 +11,15 @@ function isNonEmpty(value: string | null | undefined): value is string {
   return Boolean(value && value.trim().length > 0);
 }
 
+function formatDate(dateString: string | undefined | null): string {
+  if (!dateString) return "";
+  const [year, month] = dateString.split("-");
+  if (!year || !month) return dateString;
+
+  const date = new Date(parseInt(year), parseInt(month) - 1);
+  return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
 export function AtsTemplate({ data, styles }: AtsTemplateProps) {
   const profile = data.profile || ({} as any);
   const experience = data.experience || [];
@@ -108,7 +117,7 @@ export function AtsTemplate({ data, styles }: AtsTemplateProps) {
                     </div>
                     <div className="text-right text-[10px] text-black/65 whitespace-nowrap">
                       <div>
-                        {job.start} — {job.end}
+                        {formatDate(job.start)} — {formatDate(job.end)}
                       </div>
                       {isNonEmpty(job.location) && <div>{job.location}</div>}
                     </div>
@@ -147,7 +156,7 @@ export function AtsTemplate({ data, styles }: AtsTemplateProps) {
                       </div>
                     </div>
                     <div className="text-right text-[10px] text-black/65 whitespace-nowrap">
-                      {edu.start} — {edu.end}
+                      {formatDate(edu.start)} — {formatDate(edu.end)}
                     </div>
                   </div>
                 ))

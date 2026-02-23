@@ -11,6 +11,18 @@ function isNonEmpty(value: string | null | undefined): value is string {
   return Boolean(value && value.trim().length > 0);
 }
 
+function formatDate(dateString: string | undefined | null): string {
+  if (!dateString) return "";
+  if (dateString.toLowerCase() === "present") return "Present";
+  const parts = dateString.split("-");
+  const year = parts[0];
+  const month = parts[1];
+  if (!year || !month) return dateString;
+
+  const date = new Date(parseInt(year), parseInt(month) - 1);
+  return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
 export function ExecutiveClassicTemplate({
   data,
   styles,
@@ -78,7 +90,7 @@ export function ExecutiveClassicTemplate({
                 >
                   <div className="text-[10px]">
                     <div>
-                      {job.start} – {job.end}
+                      {formatDate(job.start)} – {formatDate(job.end)}
                     </div>
                     {isNonEmpty(job.location) && (
                       <div className="mt-1">{job.location}</div>
@@ -122,7 +134,7 @@ export function ExecutiveClassicTemplate({
                   className="grid grid-cols-[105px_1fr] gap-4"
                 >
                   <div className="text-[10px]">
-                    {edu.start} – {edu.end}
+                    {formatDate(edu.start)} – {formatDate(edu.end)}
                   </div>
                   <div>
                     <div className="font-bold">
