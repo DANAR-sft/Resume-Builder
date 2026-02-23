@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,9 +22,11 @@ import { useAuth } from "@/contexts/authContext";
 export default function LoginPage() {
   const router = useRouter();
   const { refreshAuth } = useAuth();
+  const [isLoading, setIsLoading] = React.useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setIsLoading(true);
     const formData = new FormData(event.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
@@ -38,6 +42,8 @@ export default function LoginPage() {
     } catch (error) {
       alert(`Sign in failed. Please check your credentials and try again.`);
       console.log(`SignIn error >>>`, error);
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -108,9 +114,17 @@ export default function LoginPage() {
             <CardFooter className="flex flex-col gap-3 px-5 pb-6 pt-8 sm:px-8 sm:pb-8">
               <Button
                 type="submit"
-                className="w-full h-11 bg-gradient-blue text-white font-semibold rounded-lg shadow-glow hover-lift transition-smooth text-sm"
+                disabled={isLoading}
+                className="w-full h-11 bg-gradient-blue text-white font-semibold rounded-lg shadow-glow hover-lift transition-smooth text-sm flex items-center justify-center gap-2"
               >
-                Login
+                {isLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Signing In...</span>
+                  </>
+                ) : (
+                  "Login"
+                )}
               </Button>
 
               <div className="flex items-center w-full">

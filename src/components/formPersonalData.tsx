@@ -358,10 +358,10 @@ export function FormPersonalData({
                       e.preventDefault();
                       setLinks((prev) => prev.filter((_, i) => i !== idx));
                     }}
-                    className="h-10 w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl"
+                    className="h-10 w-full sm:w-10 text-red-500 bg-red-50 hover:bg-red-100 sm:text-slate-400 sm:bg-transparent sm:hover:text-red-500 sm:hover:bg-red-50 rounded-xl flex items-center justify-center shrink-0 transition-smooth"
                   >
                     <svg
-                      className="w-5 h-5"
+                      className="w-5 h-5 mb-0.5 sm:mb-0"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"

@@ -337,7 +337,7 @@ export function FormExtras({
                   <div className="space-y-3">
                     <Input
                       placeholder="e.g. English"
-                      className="h-9 rounded-lg border-slate-100 focus:border-blue-500 transition-smooth text-sm font-bold"
+                      className="h-9 rounded-lg border-slate-100 focus:border-blue-500 transition-smooth text-sm font-bold pr-8"
                       value={l.name}
                       onChange={(e) =>
                         updateLanguage(idx, "name", e.target.value)
