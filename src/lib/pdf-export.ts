@@ -5,6 +5,18 @@ function isNonEmpty(value: string | null | undefined): value is string {
   return Boolean(value && value.trim().length > 0);
 }
 
+function formatDate(dateString: string | undefined | null): string {
+  if (!dateString) return "";
+  if (dateString.toLowerCase() === "present") return "Present";
+  const parts = dateString.split("-");
+  const year = parts[0];
+  const month = parts[1];
+  if (!year || !month) return dateString;
+
+  const date = new Date(parseInt(year), parseInt(month) - 1);
+  return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
 // Convert HTML hex to RGB for jsPDF
 function hexToRgb(hex: string) {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -194,7 +206,7 @@ function buildAtsPdf(doc: jsPDF, resume: Resume) {
       }
 
       // Right side: Dates & Location
-      const dates = `${job.start || ""} — ${job.end || ""}`;
+      const dates = `${formatDate(job.start)} — ${formatDate(job.end)}`;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(100, 100, 100);
@@ -249,7 +261,7 @@ function buildAtsPdf(doc: jsPDF, resume: Resume) {
       doc.setTextColor(0, 0, 0);
       doc.text(edu.college || "", rightColX, y);
 
-      const dates = `${edu.start || ""} — ${edu.end || ""}`;
+      const dates = `${formatDate(edu.start)} — ${formatDate(edu.end)}`;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(100, 100, 100);
@@ -525,7 +537,7 @@ function buildExecutivePdf(doc: jsPDF, resume: Resume) {
       // Left Col: Dates & Location
       doc.setFont("times", "normal");
       doc.setFontSize(10);
-      const dates = `${job.start || ""} — ${job.end || ""}`;
+      const dates = `${formatDate(job.start)} — ${formatDate(job.end)}`;
       let leftY = writeWrappedText(doc, dates, MARGIN + 10, y, leftColWidth, 4);
 
       if (isNonEmpty(job.location)) {
@@ -579,7 +591,7 @@ function buildExecutivePdf(doc: jsPDF, resume: Resume) {
       // Left Col: Dates
       doc.setFont("times", "normal");
       doc.setFontSize(10);
-      const dates = `${edu.start || ""} — ${edu.end || ""}`;
+      const dates = `${formatDate(edu.start)} — ${formatDate(edu.end)}`;
       const leftY = writeWrappedText(
         doc,
         dates,
@@ -888,7 +900,7 @@ function buildModernTechPdf(doc: jsPDF, resume: Resume) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       doc.setTextColor(71, 85, 105); // slate-600
-      const dates = `${job.start || ""} — ${job.end || ""}`;
+      const dates = `${formatDate(job.start)} — ${formatDate(job.end)}`;
       const dateLines = doc.splitTextToSize(dates, rightPartWidth);
       for (const l of dateLines) {
         doc.text(l, rightEdgeX, expRightY, { align: "right" });
@@ -979,7 +991,7 @@ function buildModernTechPdf(doc: jsPDF, resume: Resume) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       doc.setTextColor(71, 85, 105); // slate-600
-      const dates = `${edu.start || ""} — ${edu.end || ""}`;
+      const dates = `${formatDate(edu.start)} — ${formatDate(edu.end)}`;
       const dateLines = doc.splitTextToSize(dates, rightPartWidth);
       for (const l of dateLines) {
         doc.text(l, rightEdgeX, eduRightY, { align: "right" });
