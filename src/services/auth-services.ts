@@ -1,8 +1,8 @@
-import { supabaseRls } from "../supabase/clients";
+import { getSupabaseClient } from "../supabase/clients";
 
 export class AuthService {
-    async logout(supabaseUrl: string, anonKey: string, accessToken: string) {
-        const res = await fetch(`${supabaseUrl}/auth/v1/logout`, {
+    async logout(getSupabaseClient: string, anonKey: string, accessToken: string) {
+        const res = await fetch(`${getSupabaseClient}/auth/v1/logout`, {
         method: "POST",
         headers: {
             apikey: anonKey,

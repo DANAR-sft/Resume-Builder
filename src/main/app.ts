@@ -11,8 +11,15 @@ import docsRoute from "../routes/docs-route";
 
 export const app = express();
 
+const allowedOrigins = process.env.FRONTEND_URL! || "http://localhost:3000";
+
+
 const corsOptions: cors.CorsOptions = {
-  origin: "http://localhost:3000",
+  origin(origin, cb) {
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error(`CORS blocked: ${origin}`));
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -20,10 +27,8 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(cors(corsOptions));
 
-// preflight handler TANPA route pattern (anti path-to-regexp error)
 app.use((req, res, next) => {
   if (req.method === "OPTIONS") {
-    // cors middleware udah set header, tinggal balikin 204
     return res.sendStatus(204);
   }
   next();

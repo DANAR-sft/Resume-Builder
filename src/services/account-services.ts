@@ -1,8 +1,8 @@
-import { supabaseRls } from "../supabase/clients";
+import { getSupabaseClient } from "../supabase/clients";
 
 export class AccountService {
   async getAccount(accessToken: string) {
-    const sb = supabaseRls(accessToken);
+    const sb = getSupabaseClient(accessToken);
 
     const { data, error } = await sb.auth.getUser();
     if (error || !data.user) throw new Error(error?.message ?? "Failed to get user");
@@ -16,7 +16,7 @@ export class AccountService {
   }
 
   async updateDisplayName(accessToken: string, displayName: string) {
-    const sb = supabaseRls(accessToken);
+    const sb = getSupabaseClient(accessToken);
 
     const { data, error } = await sb.auth.updateUser({
       data: { display_name: displayName }
@@ -32,3 +32,7 @@ export class AccountService {
     };
   }
 }
+function supabaseRls(accessToken: string) {
+  throw new Error("Function not implemented.");
+}
+
